@@ -1,0 +1,137 @@
+---
+title: "Model"
+author: "Rui Zou, Zhihao Ai"
+output: html_document
+---
+
+# Load training set
+```{r}
+train <- read.table("./train.txt", header = F, sep = "\t")
+colnames(train) <- c('age', 'gender_MALE', 'signup_method_facebook', 'signup_method_google', 'language_cs', 'language_da', 'language_de', 'language_el', 'language_en', 'language_es', 'language_fi', 'language_fr', 'language_hu', 'language_is', 'language_it', 'language_ja', 'language_ko', 'language_nl', 'language_no', 'language_pl', 'language_pt', 'language_ru', 'language_sv', 'language_th', 'language_tr', 'language_zh', 'signup_app_Moweb', 'signup_app_Web', 'signup_app_iOS', 'Y')
+```
+
+# Model with all variables
+```{r}
+lgr.full <- glm(Y~., data = train, family = binomial('logit'))
+summary(lgr.full)
+```
+
+# Reduced model (based on summary of the model with all variables)
+```{r}
+lgr.reduced <- glm(Y~age+gender_MALE+signup_app_Moweb+signup_app_Web+signup_app_iOS, data = train, family = binomial('logit'))
+summary(lgr.reduced)
+```
+
+# Load testing set
+```{r}
+test <- read.table("./test.txt", header = F, sep = "\t")
+colnames(test) <- c('age', 'gender_MALE', 'signup_method_facebook', 'signup_method_google', 'language_cs', 'language_da', 'language_de', 'language_el', 'language_en', 'language_es', 'language_fi', 'language_fr', 'language_hu', 'language_is', 'language_it', 'language_ja', 'language_ko', 'language_nl', 'language_no', 'language_pl', 'language_pt', 'language_ru', 'language_sv', 'language_th', 'language_tr', 'language_zh', 'signup_app_Moweb', 'signup_app_Web', 'signup_app_iOS', 'Y')
+```
+
+# Forward selection
+```
+fit0 <- glm(Y ~ 1, data = train, family = binomial(link = "logit"))
+fit.forward <- step(fit0, scope=list(lower=~1, upper=~age+gender_MALE+signup_method_facebook+signup_method_google+language_cs+language_da+language_de+language_el+language_en+language_es+language_fi+language_fr+language_hu+language_is+language_it+language_ja+language_ko+language_nl+language_no+language_pl+language_pt+language_ru+language_sv+language_th+language_tr+language_zh+signup_app_Moweb+signup_app_Web+signup_app_iOS), direction="forward", family = binomial(link = "logit"))
+```
+Results for forward selection:
+
+Start:  AIC=44634.26, Y ~ 1
+
+End: AIC=44504.2, Y ~ signup_app_Web + age + signup_app_Moweb + language_zh + language_it + language_fr + gender_MALE + language_cs + language_is
+<!--
+Results for forward selection:
+Start:  AIC=44634.26
+Y ~ 1
+...
+...
+Step:  AIC=44504.2
+Y ~ signup_app_Web + age + signup_app_Moweb + language_zh + language_it + language_fr + gender_MALE + language_cs + language_is
+-->
+
+# Backward selection
+```
+fitf <- glm(Y ~ ., data = train, family = binomial(link = "logit"))
+fit.backward<-step(fitf, scope=list(lower=~1,
+upper=~age+gender_MALE+signup_method_facebook+signup_method_google+language_cs+language_da+language_de+language_el+language_en+language_es+language_fi+language_fr+language_hu+language_is+language_it+language_ja+language_ko+language_nl+language_no+language_pl+language_pt+language_ru+language_sv+language_th+language_tr+language_zh+signup_app_Moweb+signup_app_Web+signup_app_iOS), direction="backward")
+```
+Results for backward selection:
+
+Start:  AIC=44533.37
+Y ~ age + gender_MALE + signup_method_facebook + signup_method_google + 
+    language_cs + language_da + language_de + language_el + language_en + 
+    language_es + language_fi + language_fr + language_hu + language_is + 
+    language_it + language_ja + language_ko + language_nl + language_no + 
+    language_pl + language_pt + language_ru + language_sv + language_th + 
+    language_tr + language_zh + signup_app_Moweb + signup_app_Web + 
+    signup_app_iOS
+    
+End:  AIC=44508.18
+Y ~ age + gender_MALE + language_cs + language_el + language_en + 
+    language_fr + language_is + language_it + signup_app_Moweb + 
+    signup_app_Web
+
+# Both (start from full model)
+```
+fit.both<-step(fitf, scope=list(lower=~1,
+upper=~age+gender_MALE+signup_method_facebook+signup_method_google+language_cs+language_da+language_de+language_el+language_en+language_es+language_fi+language_fr+language_hu+language_is+language_it+language_ja+language_ko+language_nl+language_no+language_pl+language_pt+language_ru+language_sv+language_th+language_tr+language_zh+signup_app_Moweb+signup_app_Web+signup_app_iOS), direction="both")
+```
+Results for both (start from full model):
+
+Start:  AIC=44533.37
+Y ~ age + gender_MALE + signup_method_facebook + signup_method_google + 
+    language_cs + language_da + language_de + language_el + language_en + 
+    language_es + language_fi + language_fr + language_hu + language_is + 
+    language_it + language_ja + language_ko + language_nl + language_no + 
+    language_pl + language_pt + language_ru + language_sv + language_th + 
+    language_tr + language_zh + signup_app_Moweb + signup_app_Web + 
+    signup_app_iOS
+
+End:  AIC=44504.2
+Y ~ age + gender_MALE + language_cs + language_fr + language_is + 
+    language_it + signup_app_Moweb + signup_app_Web + language_zh
+
+# Both (start from model containing only intercept)
+```
+fit.both2<-step(fit0, scope=list(lower=~1,
+upper=~age+gender_MALE+signup_method_facebook+signup_method_google+language_cs+language_da+language_de+language_el+language_en+language_es+language_fi+language_fr+language_hu+language_is+language_it+language_ja+language_ko+language_nl+language_no+language_pl+language_pt+language_ru+language_sv+language_th+language_tr+language_zh+signup_app_Moweb+signup_app_Web+signup_app_iOS),direction="both")
+```
+Results for both (start from model containing only intercept):
+
+Start:  AIC=44634.26
+Y ~ 1
+
+End:  AIC=44504.2
+Y ~ signup_app_Web + age + signup_app_Moweb + language_zh + language_it + 
+    language_fr + gender_MALE + language_cs + language_is
+
+# Likelihood Ratio Test for language predictors and signup_method predictors
+Using `lrtest` from package `lmtest`
+```{r, message = FALSE} 
+library(lmtest)
+```
+```{r}
+lrtest(lgr.reduced, lgr.full)
+```
+At $\alpha = 0.05$ level, since $G^2 = 31.429 \le \chi^2(1-\alpha;p - q) = \chi^2(1-0.05;29 - 6) = 35.17246$, we conclude $H_0$, that the coefficients of language predictors and signup_method predictors all equal zero and can be dropped from the full model.
+
+# Likelihood Ratio Test for signup_app predictors
+```{r}
+lgr.reduced.wo.signup_app <- glm(Y~age+gender_MALE, data = train, family = binomial('logit'))
+lrtest(lgr.reduced.wo.signup_app, lgr.reduced)
+```
+At $\alpha = 0.05$ level, since $G^2 = 85.196 > \chi^2(1-\alpha;p - q) = \chi^2(1-0.05;6 - 3) = 7.814728$, we reject $H_0$, that the coefficients of signup_app predictors can be dropped from the model. The signup_app predictors are retained.
+
+# Wald Test for age predictor
+```{r}
+summary(lgr.reduced)
+```
+## age
+At $\alpha = 0.05$ level, since $|z^*| = 5.155 > z(1-\alpha/2) = 2.326348$, we reject $H_0$, that the coefficient of age predictor can be dropped. The $p$-value of the test is $2.54e-07$.
+
+## gender
+At $\alpha = 0.1$ level, since $|z^*| = 2.072 > z(1-\alpha/2) = 2.053749$, we reject $H_0$, that the coefficient of gender predictor can be dropped. The $p$-value of the test is $0.038245$.
+
+# Interpretation
+```{r}
+exp(coef(lgr.reduced))
+```
